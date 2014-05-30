@@ -1,0 +1,122 @@
+<apex:page sidebar="false" standardStylesheets="false" showHeader="true">
+    <!-- *@atorman
+		 *May 2014
+		 *Created per request to combine userId information with 
+		 *Boomerang (http://yahoo.github.io/boomerang/doc/)
+         *performance measurements in order to associate a performance
+         *profile with a particular user
+		 * -->
+<head> 
+    <title>UserInfo TEST</title>
+    
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"/> 
+    <apex:includeScript value="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"/> 
+         
+  </head>  
+  <body>  
+      <apex:pageBlock title="Introduction">
+          This demonstration allows a developer to easily bind user information into their Javascript from a Visualforce page.<br/><br/>
+          This page is designed to show how you can store and surface the UserId from a Javascript variable.<br/><br/>
+          Why Javascript instead of using Apex?<br/>
+          Because the specific use case here is designed to pass the UserId or other User information along with client side performance information to a Boomerang script<br/><br/>
+          What exactly is Boomerang?<br/>
+          <a href='http://yahoo.github.io/boomerang/doc/' target='_blank'>Boomerang</a> is a performance monitoring javascript, first developed in Yahoo! and later opened up to the community<br/>
+      </apex:pageBlock>
+      <apex:pageBlock title="AJAX Toolkit Example">
+         <script type="text/javascript">
+            var __sfdcSessionId = '{!GETSESSIONID()}';
+         </script>
+         <script src="/soap/ajax/30.0/connection.js" type="text/javascript"></script>
+         <script src="/soap/ajax/30.0/apex.js" type="text/javascript"></script>
+        
+           <script type="text/javascript">
+               var user;
+               
+               function getUserInfo(){
+                   result = sforce.connection.getUserInfo();
+                   alert('UserInfo: '+JSON.stringify(result,null,'  '));
+                   // following line will return the user information per doc: http://www.salesforce.com/us/developer/docs/ajax/
+                   document.getElementById("userId").innerHTML = result.userId;
+                   document.getElementById("userAll").innerHTML = result;
+                   //console.log('result: '+result);
+               }
+           </script>
+          click the following button (although you don't need a button to surface user information):<br/> 
+          <button type="button" onclick="getUserInfo()">getUserInfo</button><br/>
+          <p id="ajaxresult">Results:</p>
+          <p id="userId"></p><br/>
+          <p id="userAll"></p><br/>
+      </apex:pageBlock>  
+  
+    <apex:pageBlock title="Visualforce Data Binding Example"> 
+      	  <script type="text/javascript"> 
+               function getVFBindings(){
+                   alert('UserId: {!$User.Id}');
+               }
+           </script>
+        
+      On a Visualforce page, data binding is done automatically.<br/>
+      As a result, you can just pass your boomerang script this binding<br/><br/>
+      User Id: {!$User.Id}<br/>
+      User First Name: {!$User.FirstName}<br/>
+      User Last Name: {!$User.LastName}<br/><br/>
+
+      click the following button (although you don't need a button to surface user information):<br/> 
+      <button type="button" onclick="getVFBindings()">getVFBindings</button><br/>
+    </apex:pageBlock>
+    
+    <apex:pageBlock title="Cookie Example"> 
+      <script type="text/javascript">
+          function getCookie(disco)
+            {
+            var name = disco + "=";
+            var ca = document.cookie.split(';');
+            console.log('ca: '+ca);
+            for(var i=0; i<ca.length; i++) 
+              {
+              var c = ca[i].trim();
+              if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+              console.log('c: '+c);
+              document.getElementById("cookie").innerHTML = c;
+              }
+            return "";
+            }
+      </script>
+      If you put this script on the custom sidebar, it will return the userId in the disco named object along with the orgid. <br/>
+      On a visualforce page, we don't capture UserId in the cookie<br/>
+      <p id="cookie"></p><br/>
+    </apex:pageBlock>
+  <apex:pageBlock title="JQuery SOQL Example">   
+  <script>
+    jQuery(document).ready(function($) {
+      $('#queryform').submit(function(){
+        $.ajax($('#query').val(),
+        {
+          beforeSend: function(xhr) {
+            xhr.setRequestHeader('Authorization', 'Bearer {!$Api.Session_ID}'); // set session Id to authenticate
+          },
+          success: function(response) {
+            $('#results').empty(); // clear the results before submitting the next rest call
+            $('#results').append(JSON.stringify(response, null, '  ')); // stringify JSON results from REST API call
+          	alert('response: '+JSON.stringify(response,null,'  '));
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+            alert(jqXHR.status + ': ' + errorThrown);
+          }
+        });
+        return false;
+      });
+    });
+  </script>
+  <form id="queryform">
+      This is essentially the same as Visualforce data binding.<br/>
+    <input id="query" value="/services/data/v30.0/query?q=select+id+from+user+where+id+=+'{!$User.Id}'" 
+           style="font-family:monospace; width:800px; height:20px; font-size:18px;"/>
+    <input type="submit" id="submit" value="Submit"  />
+  </form>
+  <p>Results:</p>
+    <pre id="results" style="font-family:monospace;font-size:18px;">
+    </pre>
+  </apex:pageBlock>
+  </body>
+</apex:page>
